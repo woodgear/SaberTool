@@ -1,75 +1,63 @@
 #pragma once
 #include <Windows.h>
+#include <shlobj.h>
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <fstream>
 namespace Tool {
 
-	class ConsoleLog {
+	class IWriter {
 	public:
-
-		static ConsoleLog& Instance() {
-			static ConsoleLog theSingleton;
-			return theSingleton;
-		}
-		void writeln(std::string msg);
-		void write(std::string msg);
-
-	private:
-		HANDLE m_hOutputHandle;
-		wchar_t buf[1024 * 1024];
-		ConsoleLog();
-		ConsoleLog(ConsoleLog const&);
-		ConsoleLog& operator=(ConsoleLog const&) {};
-		~ConsoleLog();
+		virtual void write(const std::string&) =0;
+		virtual ~IWriter() {};
 	};
 
-	//TODO 继承 设计模式 共性
-	class FileLog {
-	public:
-		static FileLog& Instance() {
-			static FileLog theSingleton;
-			return theSingleton;
-		}
-
-		void writeln(std::string msg);
-		void write(std::string msg);
-	private:
-		std::string logpath;
-		FileLog(std::string path= "C:\\Users\\18754\\Desktop\\log.txt");
-		FileLog& operator=(FileLog const&) {};
-		~FileLog() {};
+	class SysConsoleWriter :public IWriter {
+		// 通过 IWriter 继承
+		virtual void write(const std::string &) override;
+		~SysConsoleWriter(){}
 	};
-
-
-	std::wstring s2ws(const std::string& s);
 	
-	template<typename T>
-	void d(T msg) {
-		std::string data;
-		if (!msg){
-			data="NULL";
-		}else{
-			std::stringstream ss;
-			ss<<msg;
-			data=ss.str();
-		}
+	std::string getDesktopPath();
 
-		//ConsoleLog::Instance().writeln(data);
-		FileLog::Instance().writeln(data);
-	}
-	template<typename T>
-	void d(T msg) {
-		std::string data;
-		if (!msg){
-			data="NULL";
-		}else{
-			std::stringstream ss;
-			ss<<msg;
-			data=ss.str();
+	class FileWriter:public IWriter {
+	public:
+		FileWriter() { this->path = getDesktopPath() + "\\log.txt"; }
+		FileWriter(std::string path) { this->path = path; };
+		virtual void write(const std::string &) override;
+		~FileWriter(){}
+	private:
+		std::string path;
+	};
+
+	//同样也可以用策略模式来做 不过既然只是性能上的优化那就先这样吧
+	class Trans {
+	public:
+		static std::string to_string(int);
+		static std::string to_string(float);
+		static std::string to_string(double);
+		static std::string to_string(long);
+		static std::string to_string(const wchar_t*);
+		static std::wstring to_wstring(const std::string&);
+	};
+	
+	class InputWrapper {
+	public:
+		static InputWrapper& Instance() {
+			static InputWrapper theSingleton;
+			return theSingleton;
 		}
-		//ConsoleLog::Instance().writeln(data);
-		FileLog::Instance().writeln(data);
-	}
+		InputWrapper() { setWriter(new FileWriter()); };
+		InputWrapper(IWriter *writer);
+		void setWriter(IWriter *writer);
+		~InputWrapper() {};//FIX 何时或者说是否需要?
+		InputWrapper& operator << (const std::string&);
+		InputWrapper& operator << (const char*);
+		InputWrapper& operator << (const wchar_t*);
+		InputWrapper& operator << (int);
+	private:
+		IWriter *writer;
+	};
+	InputWrapper d();
 }

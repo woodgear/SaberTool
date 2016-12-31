@@ -2,14 +2,12 @@
 //
 
 #include "stdafx.h"
-#include <iostream>
 #include "Tool.h"
-
 int _tmain(int argc, _TCHAR* argv[])
 {
-	Tool::d("≤‚ ‘1");
-	Tool::d("abc");
-	Tool::d("≤‚ ‘2");
+	int b = 100;
+	std::string str = "123";
+	Tool::d() << b << " " << str << " " << NULL << "≤‚ ‘" << "\n";
 	return 0;
 }
 
