@@ -6,58 +6,92 @@
 #include <sstream>
 #include <fstream>
 namespace Tool {
-
-	class IWriter {
-	public:
-		virtual void write(const std::string&) =0;
-		virtual ~IWriter() {};
-	};
-
-	class SysConsoleWriter :public IWriter {
-		// 通过 IWriter 继承
-		virtual void write(const std::string &) override;
-		~SysConsoleWriter(){}
-	};
+	//log path ==desktop path
+	static const std::string  getLogPath() {
+		static char path[MAX_PATH + 1];
+		if (SHGetSpecialFolderPathA(HWND_DESKTOP, path, CSIDL_DESKTOP, FALSE))
+			return path;
+		else
+			return "C:\\log";
+	}
 	
-	std::string getDesktopPath();
-
-	class FileWriter:public IWriter {
-	public:
-		FileWriter() { this->path = getDesktopPath() + "\\log.txt"; }
-		FileWriter(std::string path) { this->path = path; };
-		virtual void write(const std::string &) override;
-		~FileWriter(){}
-	private:
-		std::string path;
-	};
-
-	//同样也可以用策略模式来做 不过既然只是性能上的优化那就先这样吧
 	class Trans {
 	public:
-		static std::string to_string(int);
-		static std::string to_string(float);
-		static std::string to_string(double);
-		static std::string to_string(long);
-		static std::string to_string(const wchar_t*);
-		static std::wstring to_wstring(const std::string&);
-	};
-	
-	class InputWrapper {
-	public:
-		static InputWrapper& Instance() {
-			static InputWrapper theSingleton;
-			return theSingleton;
+
+		static std::string to_string(const std::string &msg) {
+			return msg;
 		}
-		InputWrapper() { setWriter(new FileWriter()); };
-		InputWrapper(IWriter *writer);
-		void setWriter(IWriter *writer);
-		~InputWrapper() {};//FIX 何时或者说是否需要?
-		InputWrapper& operator << (const std::string&);
-		InputWrapper& operator << (const char*);
-		InputWrapper& operator << (const wchar_t*);
-		InputWrapper& operator << (int);
-	private:
-		IWriter *writer;
+
+		static std::string to_string(int msg) {
+			return std::to_string(msg);
+		}
+
+		static std::string to_string(unsigned int  msg) {
+			return std::to_string(msg);
+		}
+
+		static std::string to_string(long msg) {
+			return std::to_string(msg);
+		}
+
+		static std::string to_string(unsigned long  msg) {
+			return std::to_string(msg);
+		}
+
+		static std::string to_string(long long msg) {
+			return std::to_string(msg);
+		}
+
+		static std::string to_string(unsigned long long  msg) {
+			return std::to_string(msg);
+		}
+
+		static std::string to_string(float msg) {
+			return std::to_string(msg);
+		}
+
+		static std::string to_string(double msg) {
+			return std::to_string(msg);
+		}
+
+		static std::string to_string(long double msg) {
+			return std::to_string(msg);
+		}
+
+		static std::string to_string(const wchar_t * msg) {
+			int nLen = WideCharToMultiByte(CP_ACP, 0, msg, -1, NULL, 0, NULL, NULL);
+
+			if (nLen <= 0) return std::string("");
+
+			char* pszDst = new char[nLen];
+			if (NULL == pszDst) return std::string("NULL");
+
+			WideCharToMultiByte(CP_ACP, 0, msg, -1, pszDst, nLen, NULL, NULL);
+			pszDst[nLen - 1] = 0;
+
+			std::string strTemp(pszDst);
+			delete[] pszDst;
+			return strTemp;
+
+		}
+
+		static std::wstring to_wstring(const std::string &msg) {
+			int len;
+			int slength = (int)msg.length() + 1;
+			len = MultiByteToWideChar(CP_ACP, 0, msg.c_str(), slength, 0, 0);
+			wchar_t* buf = new wchar_t[len];
+			MultiByteToWideChar(CP_ACP, 0, msg.c_str(), slength, buf, len);
+			std::wstring wmsg(buf);
+			delete[] buf;
+			return wmsg;
+		}
+
 	};
-	InputWrapper d();
+
+	template<typename T> void d(T data) {
+		std::string path = getLogPath() + "\\log.txt";
+		std::ofstream out(path,std::ofstream::app);
+		out << Trans::to_string(data) << std::endl;
+		out.close();
+	}
 }
